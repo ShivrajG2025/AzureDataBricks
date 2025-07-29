@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Azure Data Factory - Advanced Scenarios &amp; Implementation Guide</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0078d4;
+            text-align: center;
+            border-bottom: 3px solid #0078d4;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #106ebe;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e6f3ff;
+            border-left: 5px solid #0078d4;
+        }
+        h3 {
+            color: #333;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .scenario-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .code-block {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .step {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Azure Data Factory - Advanced Scenarios &amp; Implementation Guide</h1>
+        
+        <h2>61. Merge Multiple Rows into Single Row using Mapping Data Flow</h2>
+        
+        <h3>Overview</h3>
+        <p>This scenario involves aggregating multiple rows of data into a single row using the Aggregate transformation with the collect() function in Azure Data Factory Mapping Data Flows.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A retail company needs to consolidate employee skills from multiple rows into a single comma-separated list per employee for their HR dashboard.</p>
+            
+            <p><strong>Sample Input Data:</strong></p>
+            <table>
+                <tr><th>EmployeeID</th><th>EmployeeName</th><th>Skill</th></tr>
+                <tr><td>101</td><td>John Doe</td><td>Java</td></tr>
+                <tr><td>101</td><td>John Doe</td><td>Python</td></tr>
+                <tr><td>101</td><td>John Doe</td><td>Azure</td></tr>
+                <tr><td>102</td><td>Jane Smith</td><td>C#</td></tr>
+                <tr><td>102</td><td>Jane Smith</td><td>SQL</td></tr>
+            </table>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Create Data Flow</strong>
+            <ul>
+                <li>Navigate to Azure Data Factory Studio</li>
+                <li>Go to Author tab → Data flows → New data flow</li>
+                <li>Add Source transformation</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Add Aggregate Transformation</strong>
+            <ul>
+                <li>Click on + next to Source</li>
+                <li>Select "Aggregate" transformation</li>
+                <li>Configure Group by: EmployeeID, EmployeeName</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Configure Aggregates</strong>
+            <p>In the Aggregates tab, add the following expression:</p>
+            <div class="code-block">
+Skills = collect(Skill)
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Add Derived Column Transformation</strong>
+            <ul>
+                <li>Add Derived Column after Aggregate</li>
+                <li>Create new column: SkillsFormatted</li>
+                <li>Expression:</li>
+            </ul>
+            <div class="code-block">
+replace(replace(toString(Skills), '[', ''), ']', '')
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 5: Add Sink Transformation</strong>
+            <ul>
+                <li>Connect to your target dataset (Azure SQL DB, ADLS Gen2, etc.)</li>
+                <li>Configure mapping and sink options</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <strong>Expected Output:</strong>
+            <table>
+                <tr><th>EmployeeID</th><th>EmployeeName</th><th>SkillsFormatted</th></tr>
+                <tr><td>101</td><td>John Doe</td><td>Java, Python, Azure</td></tr>
+                <tr><td>102</td><td>Jane Smith</td><td>C#, SQL</td></tr>
+            </table>
+        </div>
+        
+        <h2>62. Send Email Alerts When Pipeline Fails in ADF</h2>
+        
+        <h3>Overview</h3>
+        <p>Implement automated email notifications for pipeline failures using Logic Apps integration with Azure Data Factory.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A financial services company needs immediate email notifications when their daily ETL pipelines fail to ensure SLA compliance and quick issue resolution.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Create Logic App</strong>
+            <ul>
+                <li>Create new Logic App in Azure Portal</li>
+                <li>Select "HTTP Request" trigger</li>
+                <li>Configure HTTP POST method</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Configure Email Action</strong>
+            <ul>
+                <li>Add "Send an email (V2)" action</li>
+                <li>Connect to Office 365 Outlook</li>
+                <li>Configure email template:</li>
+            </ul>
+            <div class="code-block">
+Subject: ADF Pipeline Failure Alert - @{triggerBody()?['PipelineName']}
+Body: 
+Pipeline: @{triggerBody()?['PipelineName']}
+Error: @{triggerBody()?['ErrorMessage']}
+Time: @{triggerBody()?['Timestamp']}
+Data Factory: @{triggerBody()?['DataFactoryName']}
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Add Web Activity in ADF Pipeline</strong>
+            <ul>
+                <li>Add Web Activity after your main activities</li>
+                <li>Set URL to Logic App HTTP trigger URL</li>
+                <li>Method: POST</li>
+                <li>Body configuration:</li>
+            </ul>
+            <div class="code-block">
+{
+    "PipelineName": "@{pipeline().Pipeline}",
+    "ErrorMessage": "@{activity('YourActivity').error.message}",
+    "Timestamp": "@{utcnow()}",
+    "DataFactoryName": "@{pipeline().DataFactory}",
+    "RunId": "@{pipeline().RunId}"
+}
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Configure Dependencies</strong>
+            <ul>
+                <li>Set Web Activity dependency to "Failed" or "Skipped"</li>
+                <li>This ensures email is sent only on failure</li>
+            </ul>
+        </div>
+        
+        <h2>63. Split Single Rows into Multiple Rows using Mapping Data Flows</h2>
+        
+        <h3>Overview</h3>
+        <p>Transform single rows containing delimited data into multiple rows using split() and flatten() functions.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> An e-commerce company has product data where categories are stored as comma-separated values in a single column, and they need to normalize this data for analytics.</p>
+            
+            <p><strong>Sample Input:</strong></p>
+            <table>
+                <tr><th>ProductID</th><th>ProductName</th><th>Categories</th></tr>
+                <tr><td>1001</td><td>Laptop</td><td>Electronics,Computers,Technology</td></tr>
+                <tr><td>1002</td><td>Book</td><td>Education,Literature</td></tr>
+            </table>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Add Source Transformation</strong>
+            <ul>
+                <li>Create new Data Flow</li>
+                <li>Add source pointing to your dataset</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Add Derived Column Transformation</strong>
+            <ul>
+                <li>Add derived column transformation</li>
+                <li>Create new column "CategoryArray":</li>
+            </ul>
+            <div class="code-block">
+CategoryArray = split(Categories, ',')
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Add Flatten Transformation</strong>
+            <ul>
+                <li>Add Flatten transformation</li>
+                <li>Select "CategoryArray" as the array to flatten</li>
+                <li>This creates multiple rows from the array</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Add Select Transformation (Optional)</strong>
+            <ul>
+                <li>Remove unnecessary columns</li>
+                <li>Rename flattened column to "Category"</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 5: Add Sink Transformation</strong>
+            <ul>
+                <li>Configure target dataset</li>
+                <li>Set appropriate mapping</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <strong>Expected Output:</strong>
+            <table>
+                <tr><th>ProductID</th><th>ProductName</th><th>Category</th></tr>
+                <tr><td>1001</td><td>Laptop</td><td>Electronics</td></tr>
+                <tr><td>1001</td><td>Laptop</td><td>Computers</td></tr>
+                <tr><td>1001</td><td>Laptop</td><td>Technology</td></tr>
+                <tr><td>1002</td><td>Book</td><td>Education</td></tr>
+                <tr><td>1002</td><td>Book</td><td>Literature</td></tr>
+            </table>
+        </div>
+        
+        <h2>64. Download File from API and Load into Sink using ADF</h2>
+        
+        <h3>Overview</h3>
+        <p>Use Copy Activity with HTTP connector to download files from REST APIs and load them into Azure storage.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A logistics company needs to download daily shipment reports from their partner's API and store them in Azure Data Lake for further processing.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Create HTTP Linked Service</strong>
+            <ul>
+                <li>Go to Manage → Linked Services → New</li>
+                <li>Select HTTP connector</li>
+                <li>Configure base URL and authentication</li>
+            </ul>
+            <div class="code-block">
+Base URL: https://api.example.com
+Authentication Type: Anonymous/Basic/Service Principal
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Create HTTP Dataset (Source)</strong>
+            <ul>
+                <li>Create new dataset with HTTP connector</li>
+                <li>Set format as Binary</li>
+                <li>Configure relative URL parameter</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Create Sink Dataset</strong>
+            <ul>
+                <li>Create dataset for Azure Blob/ADLS Gen2</li>
+                <li>Set format as Binary</li>
+                <li>Configure file path and name pattern</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Create Copy Activity</strong>
+            <ul>
+                <li>Add Copy Activity to pipeline</li>
+                <li>Source: HTTP dataset</li>
+                <li>Sink: Azure storage dataset</li>
+                <li>Configure additional settings:</li>
+            </ul>
+            <div class="code-block">
+Request Method: GET
+Additional headers: 
+{
+    "Authorization": "Bearer @{variables('AccessToken')}",
+    "Content-Type": "application/json"
+}
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 5: Add Error Handling</strong>
+            <ul>
+                <li>Configure retry policy</li>
+                <li>Set fault tolerance settings</li>
+                <li>Add logging and monitoring</li>
+            </ul>
+        </div>
+        
+        <h2>65. Download Zip File from API and Load All Unzip Files to Sink</h2>
+        
+        <h3>Overview</h3>
+        <p>Download compressed files from APIs and automatically extract them during the copy process.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A media company receives daily content packages as ZIP files from content providers via API and needs to extract and process individual files.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Configure HTTP Source with Compression</strong>
+            <ul>
+                <li>Create HTTP dataset as source</li>
+                <li>In Format settings, select Binary</li>
+                <li>Set Compression type: ZipDeflate</li>
+                <li>Set Compression level: Optimal</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Configure ADLS Gen2 Sink</strong>
+            <ul>
+                <li>Create ADLS Gen2 dataset</li>
+                <li>Set format as Binary</li>
+                <li>Configure folder structure for extracted files</li>
+            </ul>
+            <div class="code-block">
+File Path: extracted-files/@{formatDateTime(utcnow(),'yyyy-MM-dd')}
+File Name: @{item().name}
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Create Copy Activity</strong>
+            <ul>
+                <li>Source: HTTP dataset with compression</li>
+                <li>Sink: ADLS Gen2</li>
+                <li>Enable "Preserve hierarchy" in sink settings</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Add Validation and Logging</strong>
+            <ul>
+                <li>Add Get Metadata activity to validate extraction</li>
+                <li>Use ForEach loop if multiple ZIP files</li>
+                <li>Add logging for extracted file count</li>
+            </ul>
+        </div>
+        
+        <h2>66. Round Decimal Number in Pipeline Expression</h2>
+        
+        <h3>Overview</h3>
+        <p>Implement decimal rounding using ADF pipeline expressions without built-in round function.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A financial application needs to round currency values to 2 decimal places for compliance with accounting standards.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Create Pipeline Variables</strong>
+            <ul>
+                <li>OriginalValue (Float): 123.456789</li>
+                <li>RoundedValue (String): Output variable</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Multiply and Convert to String</strong>
+            <div class="code-block">
+@string(mul(variables('OriginalValue'), 100))
+// Result: "12345.6789"
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Split and Take Integer Part</strong>
+            <div class="code-block">
+@split(string(mul(variables('OriginalValue'), 100)), '.')[0]
+// Result: "12345"
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Convert Back to Float and Divide</strong>
+            <div class="code-block">
+@string(div(float(split(string(mul(variables('OriginalValue'), 100)), '.')[0]), 100))
+// Result: "123.45"
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 5: Complete Expression</strong>
+            <div class="code-block">
+// For 2 decimal places:
+@string(div(float(split(string(mul(variables('OriginalValue'), 100)), '.')[0]), 100))
+
+// For n decimal places (example: 3):
+@string(div(float(split(string(mul(variables('OriginalValue'), 1000)), '.')[0]), 1000))
+            </div>
+        </div>
+        
+        <h2>67. Time Zone Conversion in Mapping Data Flows</h2>
+        
+        <h3>Overview</h3>
+        <p>Convert timestamps between different time zones using Mapping Data Flows functions.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A global company needs to standardize timestamps from different regional systems to UTC for centralized reporting.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Add Source Transformation</strong>
+            <ul>
+                <li>Connect to source dataset with timestamp columns</li>
+                <li>Ensure timestamp columns are properly typed</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Add Derived Column for Time Zone Conversion</strong>
+            <div class="code-block">
+// Convert EST to UTC (EST is UTC-5, so add 5 hours)
+UTCTimestamp = addHours(toTimestamp(ESTTimestamp), 5)
+
+// Convert PST to UTC (PST is UTC-8, so add 8 hours)
+UTCTimestamp = addHours(toTimestamp(PSTTimestamp), 8)
+
+// Convert UTC to EST (subtract 5 hours)
+ESTTimestamp = addHours(toTimestamp(UTCTimestamp), -5)
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Handle Daylight Saving Time</strong>
+            <div class="code-block">
+// Dynamic conversion considering DST
+UTCTimestamp = case(
+    month(ESTTimestamp) >= 3 &amp;&amp; month(ESTTimestamp) <= 10,
+    addHours(toTimestamp(ESTTimestamp), 4), // EDT (UTC-4)
+    addHours(toTimestamp(ESTTimestamp), 5)  // EST (UTC-5)
+)
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Add Select Transformation</strong>
+            <ul>
+                <li>Remove original timezone-specific columns</li>
+                <li>Keep only UTC standardized timestamps</li>
+            </ul>
+        </div>
+        
+        <h2>68. Azure Assert Transformations for Data Validation</h2>
+        
+        <h3>Overview</h3>
+        <p>Implement data quality checks using Assert transformation and regexMatch() expressions.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A healthcare organization needs to validate patient data formats (email, phone, medical ID) before loading into their data warehouse.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Add Assert Transformation</strong>
+            <ul>
+                <li>Add after Source transformation</li>
+                <li>Configure assertion conditions</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Email Validation</strong>
+            <div class="code-block">
+// Assert condition for email validation
+regexMatch(Email, '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
+
+// Assertion message
+"Invalid email format in column Email"
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Phone Number Validation</strong>
+            <div class="code-block">
+// US phone number format validation
+regexMatch(PhoneNumber, '^\\+?1?[-.\\s]?\\(?[0-9]{3}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4}$')
+
+// Assertion message
+"Invalid phone number format in column PhoneNumber"
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Medical ID Validation</strong>
+            <div class="code-block">
+// Medical ID format: MED followed by 8 digits
+regexMatch(MedicalID, '^MED[0-9]{8}$')
+
+// Assertion message
+"Invalid Medical ID format - must be MED followed by 8 digits"
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 5: Configure Error Handling</strong>
+            <ul>
+                <li>Set assertion to "Continue on error" for logging</li>
+                <li>Or set to "Stop on error" for strict validation</li>
+                <li>Configure error output for failed records</li>
+            </ul>
+        </div>
+        
+        <h2>69. Delta Live Tables for Declarative ETL Pipeline</h2>
+        
+        <h3>Overview</h3>
+        <p>Build declarative ETL pipelines for both batch and streaming data using Delta Live Tables with SQL.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A financial services company needs real-time fraud detection processing streaming transaction data while also processing daily batch reconciliation files.</p>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Create Bronze Layer (Raw Data)</strong>
+            <div class="code-block">
+CREATE OR REFRESH STREAMING LIVE TABLE transactions_bronze
+COMMENT "Raw transaction data from Kafka stream"
+AS SELECT 
+    cast(value as string) as raw_data,
+    cast(key as string) as transaction_id,
+    timestamp,
+    topic,
+    partition,
+    offset
+FROM cloud_files(
+    "/mnt/kafka-stream/transactions/",
+    "json",
+    map("cloudFiles.format", "json")
+)
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Create Silver Layer (Cleaned Data)</strong>
+            <div class="code-block">
+CREATE OR REFRESH STREAMING LIVE TABLE transactions_silver
+(
+    CONSTRAINT valid_transaction_id EXPECT (transaction_id IS NOT NULL),
+    CONSTRAINT valid_amount EXPECT (amount > 0),
+    CONSTRAINT valid_timestamp EXPECT (transaction_timestamp IS NOT NULL)
+)
+COMMENT "Cleaned and validated transaction data"
+AS SELECT 
+    transaction_id,
+    get_json_object(raw_data, '$.customer_id') as customer_id,
+    cast(get_json_object(raw_data, '$.amount') as decimal(10,2)) as amount,
+    get_json_object(raw_data, '$.merchant_id') as merchant_id,
+    to_timestamp(get_json_object(raw_data, '$.timestamp')) as transaction_timestamp,
+    get_json_object(raw_data, '$.payment_method') as payment_method,
+    current_timestamp() as processed_timestamp
+FROM STREAM(LIVE.transactions_bronze)
+WHERE get_json_object(raw_data, '$.transaction_id') IS NOT NULL
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Create Gold Layer (Business Logic)</strong>
+            <div class="code-block">
+CREATE OR REFRESH STREAMING LIVE TABLE fraud_alerts_gold
+COMMENT "Real-time fraud detection alerts"
+AS SELECT 
+    t.customer_id,
+    t.transaction_id,
+    t.amount,
+    t.merchant_id,
+    t.transaction_timestamp,
+    'HIGH_VELOCITY' as fraud_type,
+    count(*) over (
+        partition by customer_id 
+        order by transaction_timestamp 
+        range between interval 10 minutes preceding and current row
+    ) as transactions_last_10min
+FROM STREAM(LIVE.transactions_silver) t
+WHERE count(*) over (
+    partition by customer_id 
+    order by transaction_timestamp 
+    range between interval 10 minutes preceding and current row
+) > 5
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Batch Processing for Daily Reconciliation</strong>
+            <div class="code-block">
+CREATE OR REFRESH LIVE TABLE daily_reconciliation
+COMMENT "Daily transaction reconciliation with external systems"
+AS SELECT 
+    date(transaction_timestamp) as transaction_date,
+    merchant_id,
+    count(*) as transaction_count,
+    sum(amount) as total_amount,
+    avg(amount) as avg_amount,
+    max(amount) as max_amount,
+    min(amount) as min_amount
+FROM LIVE.transactions_silver
+WHERE date(transaction_timestamp) = current_date() - 1
+GROUP BY date(transaction_timestamp), merchant_id
+            </div>
+        </div>
+        
+        <h2>70. TimeZone Conversion in Mapping Data Flows (Detailed)</h2>
+        
+        <h3>Overview</h3>
+        <p>Comprehensive timezone conversion implementation with UTC to EST conversion example.</p>
+        
+        <div class="scenario-box">
+            <h3>Production Scenario</h3>
+            <p><strong>Business Case:</strong> A multinational corporation has user login data stored in UTC and needs to convert it to local EST time for regional reporting and analytics.</p>
+            
+            <p><strong>Sample Data:</strong></p>
+            <table>
+                <tr><th>UserID</th><th>LastLoginUTC</th><th>Region</th></tr>
+                <tr><td>1001</td><td>2024-01-15 14:30:00</td><td>US-East</td></tr>
+                <tr><td>1002</td><td>2024-01-15 18:45:00</td><td>US-East</td></tr>
+            </table>
+        </div>
+        
+        <h3>Step-by-Step Implementation</h3>
+        
+        <div class="step">
+            <strong>Step 1: Add Source Transformation</strong>
+            <ul>
+                <li>Connect to source dataset containing UTC timestamps</li>
+                <li>Verify LastLoginUTC column is string type</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Step 2: Add Derived Column for Timestamp Conversion</strong>
+            <div class="code-block">
+// Convert string to timestamp
+LastLoginTimestamp = toTimestamp(LastLoginUTC, 'yyyy-MM-dd HH:mm:ss')
+
+// Convert UTC to EST (UTC is 5 hours ahead of EST in standard time)
+LastLoginEST = addHours(LastLoginTimestamp, -5)
+
+// For EDT (Daylight saving time, UTC is 4 hours ahead)
+LastLoginEDT = addHours(LastLoginTimestamp, -4)
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 3: Handle Daylight Saving Time Dynamically</strong>
+            <div class="code-block">
+// Dynamic EST/EDT conversion based on date
+LastLoginLocal = case(
+    // DST period: Second Sunday in March to First Sunday in November
+    (month(LastLoginTimestamp) > 3 &amp;&amp; month(LastLoginTimestamp) < 11) ||
+    (month(LastLoginTimestamp) == 3 &amp;&amp; dayOfMonth(LastLoginTimestamp) > (14 - dayOfWeek(makeDate(year(LastLoginTimestamp), 3, 1)))) ||
+    (month(LastLoginTimestamp) == 11 &amp;&amp; dayOfMonth(LastLoginTimestamp) <= (7 - dayOfWeek(makeDate(year(LastLoginTimestamp), 11, 1)))),
+    addHours(LastLoginTimestamp, -4), // EDT
+    addHours(LastLoginTimestamp, -5)  // EST
+)
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 4: Add Select Transformation</strong>
+            <ul>
+                <li>Remove intermediate columns</li>
+                <li>Keep only required columns:</li>
+            </ul>
+            <div class="code-block">
+UserID,
+LastLoginLocal,
+Region
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 5: Add Formatting (Optional)</strong>
+            <div class="code-block">
+// Format timestamp for display
+LastLoginFormatted = toString(LastLoginLocal, 'yyyy-MM-dd HH:mm:ss')
+
+// Add timezone indicator
+LastLoginWithTZ = concat(toString(LastLoginLocal, 'yyyy-MM-dd HH:mm:ss'), ' EST')
+            </div>
+        </div>
+        
+        <div class="step">
+            <strong>Step 6: Configure Sink Transformation</strong>
+            <ul>
+                <li>Connect to target dataset (SQL Database, Data Lake, etc.)</li>
+                <li>Map columns appropriately</li>
+                <li>Configure sink settings for optimal performance</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <strong>Expected Output:</strong>
+            <table>
+                <tr><th>UserID</th><th>LastLoginLocal</th><th>Region</th></tr>
+                <tr><td>1001</td><td>2024-01-15 09:30:00</td><td>US-East</td></tr>
+                <tr><td>1002</td><td>2024-01-15 13:45:00</td><td>US-East</td></tr>
+            </table>
+        </div>
+        
+        <h2>Best Practices and Production Considerations</h2>
+        
+        <div class="warning">
+            <h3>Performance Optimization</h3>
+            <ul>
+                <li>Use partitioning in Data Flows for large datasets</li>
+                <li>Implement incremental loading patterns</li>
+                <li>Monitor Data Integration Units (DIU) consumption</li>
+                <li>Use compute-optimized vs memory-optimized clusters appropriately</li>
+            </ul>
+        </div>
+        
+        <div class="warning">
+            <h3>Error Handling and Monitoring</h3>
+            <ul>
+                <li>Implement comprehensive logging and alerting</li>
+                <li>Use Azure Monitor and Log Analytics integration</li>
+                <li>Set up pipeline metrics and custom alerts</li>
+                <li>Implement retry policies and fault tolerance</li>
+            </ul>
+        </div>
+        
+        <div class="warning">
+            <h3>Security Considerations</h3>
+            <ul>
+                <li>Use Azure Key Vault for storing secrets and connection strings</li>
+                <li>Implement proper RBAC and access controls</li>
+                <li>Enable data encryption in transit and at rest</li>
+                <li>Use Managed Identity for authentication where possible</li>
+            </ul>
+        </div>
+        
+        <div class="success">
+            <h3>Testing and Deployment</h3>
+            <ul>
+                <li>Implement proper CI/CD pipelines for ADF artifacts</li>
+                <li>Use parameterization for environment-specific configurations</li>
+                <li>Perform thorough testing in development environment</li>
+                <li>Implement gradual rollout strategies for production deployments</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 50px; padding: 20px; background-color: #f0f8ff; border-radius: 5px;">
+            <h3>Document Summary</h3>
+            <p>This comprehensive guide covers advanced Azure Data Factory scenarios including data transformation, API integration, error handling, and timezone management. Each section provides production-ready implementations with real-world business cases and best practices for enterprise deployment.</p>
+            
+            <p><strong>Key Technologies Covered:</strong></p>
+            <ul>
+                <li>Azure Data Factory Mapping Data Flows</li>
+                <li>Pipeline Expressions and Functions</li>
+                <li>Logic Apps Integration</li>
+                <li>HTTP/REST API Connectors</li>
+                <li>Delta Live Tables</li>
+                <li>Data Validation and Quality Checks</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html> 
